@@ -1,0 +1,107 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <title>Blankspace — Art Block Helper</title>
+
+
+  <!-- Google Fonts -->
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Quicksand:wght@400;600&family=Nunito:wght@400;600&display=swap" rel="stylesheet">
+
+  <link rel="stylesheet" href="/static/style.css">
+</head>
+<body>
+
+<div class="app-container">
+
+  <h1 class="app-title">
+  <span class="brand-wrap">
+    <span class="brand-name">Blankspace</span>
+    <span class="sparkle">✦</span>
+  </span>
+  <span class="brand-tag">Art Block Helper</span>
+  <div class="brand-whisper">a quiet place to begin</div>
+</h1>
+
+
+
+  <!-- Predefined prompts -->
+  <div class="prompt-row">
+    <button class="prompt" onclick="sendPreset(this)">
+      I feel stuck and don’t know where to start
+    </button>
+    <button class="prompt" onclick="sendPreset(this)">
+      Suggest a gentle art exercise for today
+    </button>
+    <button class="prompt" onclick="sendPreset(this)">
+      I want to explore a new art style
+    </button>
+  </div>
+
+  <!-- Chat area -->
+  <div id="chat-box"></div>
+
+  <!-- Input -->
+  <div class="input-area">
+    <input
+      id="user-input"
+      placeholder="Describe your creative block or ask for inspiration…"
+      onkeydown="handleKey(event)"
+      autocomplete="off"
+    />
+    <button class="send-btn" onclick="sendMessage()">➤</button>
+  </div>
+
+</div>
+
+<script>
+async function sendMessage() {
+  const input = document.getElementById("user-input");
+  const message = input.value.trim();
+  if (!message) return;
+
+  addMessage("user", message);
+  input.value = "";
+
+  const response = await fetch("/chat", {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ message })
+  });
+
+  const data = await response.json();
+  addMessage("bot", data.reply);
+}
+
+function sendPreset(button) {
+  const text = button.innerText;
+  addMessage("user", text);
+  fetch("/chat", {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ message: text })
+  })
+  .then(res => res.json())
+  .then(data => addMessage("bot", data.reply));
+}
+
+function handleKey(event) {
+  if (event.key === "Enter") {
+    sendMessage();
+  }
+}
+
+function addMessage(type, text) {
+  const chatBox = document.getElementById("chat-box");
+  const msg = document.createElement("div");
+  msg.className = type === "user" ? "msg user-msg" : "msg bot-msg";
+  msg.innerText = text;
+  chatBox.appendChild(msg);
+  chatBox.scrollTop = chatBox.scrollHeight;
+}
+</script>
+
+</body>
+</html>
