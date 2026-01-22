@@ -57,7 +57,7 @@ def chat():
                 {"role": "system", "content": SYSTEM_PROMPT},
                 {"role": "user", "content": user_message}
             ],
-            max_tokens=80,
+            max_tokens=250,
             temperature=0.4
         )
 
