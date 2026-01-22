@@ -1,30 +1,39 @@
 from flask import Flask, render_template, request, jsonify
 from groq import Groq
+from dotenv import load_dotenv
 import os
 
+# Load environment variables
+load_dotenv()
+
+API_KEY = os.getenv("GROQ_API_KEY")
+if not API_KEY:
+    raise RuntimeError("GROQ_API_KEY not found in environment")
+
+print("API KEY LOADED: True")
 
 app = Flask(__name__)
-
-client = Groq(api_key=os.getenv("GROQ_API_KEY"))
-
+client = Groq(api_key=API_KEY)
 
 SYSTEM_PROMPT = """
-You are an art-block assistant.
+You are a friendly, calm art-block assistant.
 
-Your job is to help users START creating, not inspire them.
+Your goal is to gently help users feel safe enough to start creating.
 
-Rules:
-- Ask short, focused questions.
-- Identify the type of art block (overwhelm, fear, boredom, low energy).
-- Ask about medium and time.
-- Give ONE small, actionable task.
-- Do NOT give multiple ideas.
-- Do NOT be poetic or motivational.
-- help th user take the next step.
-- Keep it concise (under 50 words).
-- guide the user to create art.
-- don't repeat questions
-- End with a clear instruction.
+Guidelines:
+- Be warm, reassuring, and conversational.
+- Acknowledge feelings without being dramatic or poetic.
+- Ask 1–2 thoughtful questions max.
+- Help identify the type of art block (overwhelm, fear, boredom, low energy).
+- Ask about the medium and available time if relevant.
+- Suggest ONE small, low-pressure action to start.
+- Avoid clichés and generic motivation.
+- Do not overwhelm the user with options.
+- End with a gentle, clear next step.
+
+Tone:
+- Supportive, kind, and grounded.
+- It’s okay to be a bit longer if it helps the user feel understood.
 """
 
 @app.route("/")
@@ -33,32 +42,32 @@ def home():
 
 @app.route("/chat", methods=["POST"])
 def chat():
-    user_message = request.json.get("message", "")
-    print("User message:", user_message)
-
     try:
+        data = request.get_json(force=True)
+        user_message = data.get("message", "").strip()
+
+        if not user_message:
+            return jsonify({"reply": "Say something first."})
+
+        print("USING MODEL: llama-3.3-70b-versatile")
+
         completion = client.chat.completions.create(
-            model="llama-3.1-8b-instant",
+            model="llama-3.3-70b-versatile",
             messages=[
                 {"role": "system", "content": SYSTEM_PROMPT},
                 {"role": "user", "content": user_message}
             ],
-            temperature=0.7,
-            max_tokens=200
+            max_tokens=80,
+            temperature=0.4
         )
 
         reply = completion.choices[0].message.content
-        print("Bot reply:", reply)
-
         return jsonify({"reply": reply})
 
     except Exception as e:
-        print("🔥 AI ERROR:", e)
-        return jsonify({
-            "reply": "I’m having trouble thinking right now. Try again."
-        })
-
-
+        import traceback
+        traceback.print_exc()
+        return jsonify({"reply": f"ERROR: {str(e)}"}), 500
 
 if __name__ == "__main__":
-    app.run(debug=True)
+    app.run(debug=False, use_reloader=False)
